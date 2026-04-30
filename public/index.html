@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Estacionamento Inteligente</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f5f5f5;
+      margin: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    /* LAYOUT */
+    .container {
+      display: grid;
+      grid-template-columns: 3fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .chart-box {
+      position: sticky;
+      top: 20px;
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    /* MAPA */
+    .sector {
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 40px);
+      gap: 5px;
+    }
+
+    .spot {
+      width: 40px;
+      height: 40px;
+      text-align: center;
+      line-height: 40px;
+      border-radius: 5px;
+      color: white;
+      font-size: 10px;
+    }
+
+    .FREE { background: green; }
+    .OCCUPIED { background: red; }
+
+    canvas {
+      max-width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🚗 Estacionamento Inteligente</h1>
+
+<div class="container">
+
+  <!-- MAPA -->
+  <div id="map"></div>
+
+  <!-- GRÁFICO -->
+  <div class="chart-box">
+    <h2>📊 Ocupação</h2>
+    <canvas id="chart"></canvas>
+  </div>
+
+</div>
+
+<script>
+let chart;
+
+// ----------------------
+// GRÁFICO
+// ----------------------
+async function loadChart() {
+  const res = await fetch("/api/v1/sectors");
+  const data = await res.json();
+
+  const labels = data.map(s => s.sectorid);
+  const occupied = data.map(s => Number(s.occupied));
+  const free = data.map(s => Number(s.free));
+
+  if (!chart) {
+    const ctx = document.getElementById("chart").getContext("2d");
+
+    chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Ocupadas",
+            data: occupied,
+            backgroundColor: "red"
+          },
+          {
+            label: "Livres",
+            data: free,
+            backgroundColor: "green"
+          }
+        ]
+      }
+    });
+  } else {
+    chart.data.datasets[0].data = occupied;
+    chart.data.datasets[1].data = free;
+    chart.update();
+  }
+}
+
+setInterval(loadChart, 2000);
+loadChart();
+
+// ----------------------
+// MAPA
+// ----------------------
+async function loadMap() {
+  const res = await fetch("/api/v1/map");
+  const data = await res.json();
+
+  const sectors = {};
+
+  data.forEach(spot => {
+    if (!sectors[spot.sectorid]) {
+      sectors[spot.sectorid] = [];
+    }
+    sectors[spot.sectorid].push(spot);
+  });
+
+  const container = document.getElementById("map");
+  container.innerHTML = "";
+
+  Object.keys(sectors)
+    .sort()
+    .forEach(sector => {
+
+      const div = document.createElement("div");
+      div.className = "sector";
+
+      div.innerHTML = `<h2>Setor ${sector}</h2>`;
+
+      const grid = document.createElement("div");
+      grid.className = "grid";
+
+      sectors[sector]
+        .sort((a, b) => {
+          const numA = parseInt(a.spotid.split("-")[1]);
+          const numB = parseInt(b.spotid.split("-")[1]);
+          return numA - numB;
+        })
+        .forEach(spot => {
+          const s = document.createElement("div");
+          s.className = "spot " + spot.currentstate;
+          s.innerText = spot.spotid;
+          grid.appendChild(s);
+        });
+
+      div.appendChild(grid);
+      container.appendChild(div);
+    });
+}
+
+setInterval(loadMap, 2000);
+loadMap();
+</script>
+
+</body>
+</html>

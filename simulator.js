@@ -5,8 +5,8 @@ const { v4: uuidv4 } = require("uuid");
 const client = mqtt.connect("mqtt://localhost:1883");
 
 // CONFIG
-const SIMULATION_SPEED = 500; // 1s = 1 minuto
-const MIN_STAY = 90;   // minutos
+const SIMULATION_SPEED = 1000; // 1s = 1 minuto
+const MIN_STAY = 60;   // minutos
 const MAX_STAY = 240;  // minutos
 
 // Horários de pico

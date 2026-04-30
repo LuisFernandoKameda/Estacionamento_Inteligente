@@ -1,8 +1,13 @@
-version: "3.8"
-
 services:
   mosquitto:
     image: eclipse-mosquitto:2
     ports:
       - "1883:1883"
-    restart: always
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: parking
+    ports:
+      - "5432:5432"
